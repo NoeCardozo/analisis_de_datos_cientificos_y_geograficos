@@ -20,6 +20,10 @@ from scipy.stats import skew, kurtosis
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import silhouette_score, calinski_harabasz_score
 import seaborn as sns
 
 def cargar_archivo_especifico(ruta_archivo: str) -> tuple:
@@ -341,6 +345,178 @@ def clasificacion_supervisada(X, y):
     plt.close()
     
     return accuracy, rf
+
+def clasificacion_no_supervisada(X, y_original=None):
+    """
+    Realiza clasificación no supervisada usando múltiples algoritmos de clustering.
+    """
+    print("\n🔍 CLASIFICACIÓN NO SUPERVISADA")
+    print("-" * 35)
+    
+    # Normalizar los datos
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+    
+    # Reducir dimensionalidad para visualización
+    pca = PCA(n_components=2)
+    X_pca = pca.fit_transform(X_scaled)
+    
+    # Determinar número óptimo de clusters
+    n_clusters_range = range(2, min(8, len(X)//10 + 1))
+    silhouette_scores = []
+    calinski_scores = []
+    
+    print("🔍 Determinando número óptimo de clusters...")
+    for n_clusters in n_clusters_range:
+        kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
+        cluster_labels = kmeans.fit_predict(X_scaled)
+        
+        # Calcular métricas
+        silhouette_avg = silhouette_score(X_scaled, cluster_labels)
+        calinski_avg = calinski_harabasz_score(X_scaled, cluster_labels)
+        
+        silhouette_scores.append(silhouette_avg)
+        calinski_scores.append(calinski_avg)
+        
+        print(f"  • {n_clusters} clusters: Silhouette={silhouette_avg:.3f}, Calinski-Harabasz={calinski_avg:.0f}")
+    
+    # Encontrar número óptimo
+    optimal_n_clusters = n_clusters_range[np.argmax(silhouette_scores)]
+    print(f"✓ Número óptimo de clusters: {optimal_n_clusters}")
+    
+    # Aplicar diferentes algoritmos de clustering
+    resultados_clustering = {}
+    
+    # 1. K-Means
+    print("\n🎯 Aplicando K-Means...")
+    kmeans = KMeans(n_clusters=optimal_n_clusters, random_state=42, n_init=10)
+    kmeans_labels = kmeans.fit_predict(X_scaled)
+    resultados_clustering['K-Means'] = {
+        'labels': kmeans_labels,
+        'silhouette': silhouette_score(X_scaled, kmeans_labels),
+        'calinski': calinski_harabasz_score(X_scaled, kmeans_labels)
+    }
+    
+    # 2. DBSCAN
+    print("🎯 Aplicando DBSCAN...")
+    dbscan = DBSCAN(eps=0.5, min_samples=5)
+    dbscan_labels = dbscan.fit_predict(X_scaled)
+    if len(set(dbscan_labels)) > 1:  # Solo si encuentra más de un cluster
+        resultados_clustering['DBSCAN'] = {
+            'labels': dbscan_labels,
+            'silhouette': silhouette_score(X_scaled, dbscan_labels),
+            'calinski': calinski_harabasz_score(X_scaled, dbscan_labels)
+        }
+    else:
+        print("  ⚠️  DBSCAN no encontró clusters válidos")
+    
+    # 3. Clustering Jerárquico
+    print("🎯 Aplicando Clustering Jerárquico...")
+    hierarchical = AgglomerativeClustering(n_clusters=optimal_n_clusters)
+    hierarchical_labels = hierarchical.fit_predict(X_scaled)
+    resultados_clustering['Jerárquico'] = {
+        'labels': hierarchical_labels,
+        'silhouette': silhouette_score(X_scaled, hierarchical_labels),
+        'calinski': calinski_harabasz_score(X_scaled, hierarchical_labels)
+    }
+    
+    # Crear visualizaciones
+    fig, axes = plt.subplots(2, 3, figsize=(18, 12))
+    fig.suptitle('Análisis de Clustering No Supervisado', fontsize=16)
+    
+    # Plot 1: Métricas de evaluación
+    axes[0, 0].plot(n_clusters_range, silhouette_scores, 'bo-', label='Silhouette Score')
+    axes[0, 0].set_xlabel('Número de Clusters')
+    axes[0, 0].set_ylabel('Silhouette Score')
+    axes[0, 0].set_title('Evaluación de Número Óptimo de Clusters')
+    axes[0, 0].grid(True, alpha=0.3)
+    axes[0, 0].legend()
+    
+    # Plot 2: Comparación de algoritmos
+    algoritmos = list(resultados_clustering.keys())
+    silhouette_comparison = [resultados_clustering[alg]['silhouette'] for alg in algoritmos]
+    calinski_comparison = [resultados_clustering[alg]['calinski'] for alg in algoritmos]
+    
+    x = np.arange(len(algoritmos))
+    width = 0.35
+    
+    axes[0, 1].bar(x - width/2, silhouette_comparison, width, label='Silhouette Score', alpha=0.7)
+    axes[0, 1].set_xlabel('Algoritmo')
+    axes[0, 1].set_ylabel('Score')
+    axes[0, 1].set_title('Comparación de Algoritmos de Clustering')
+    axes[0, 1].set_xticks(x)
+    axes[0, 1].set_xticklabels(algoritmos, rotation=45)
+    axes[0, 1].legend()
+    axes[0, 1].grid(True, alpha=0.3)
+    
+    # Plot 3: Visualización PCA con K-Means
+    scatter = axes[0, 2].scatter(X_pca[:, 0], X_pca[:, 1], c=kmeans_labels, cmap='viridis', alpha=0.6)
+    axes[0, 2].set_xlabel('Componente Principal 1')
+    axes[0, 2].set_ylabel('Componente Principal 2')
+    axes[0, 2].set_title('K-Means Clustering (PCA)')
+    axes[0, 2].grid(True, alpha=0.3)
+    plt.colorbar(scatter, ax=axes[0, 2])
+    
+    # Plot 4: Visualización PCA con DBSCAN (si aplica)
+    if 'DBSCAN' in resultados_clustering:
+        scatter = axes[1, 0].scatter(X_pca[:, 0], X_pca[:, 1], c=dbscan_labels, cmap='viridis', alpha=0.6)
+        axes[1, 0].set_xlabel('Componente Principal 1')
+        axes[1, 0].set_ylabel('Componente Principal 2')
+        axes[1, 0].set_title('DBSCAN Clustering (PCA)')
+        axes[1, 0].grid(True, alpha=0.3)
+        plt.colorbar(scatter, ax=axes[1, 0])
+    else:
+        axes[1, 0].text(0.5, 0.5, 'DBSCAN no encontró\nclusters válidos', 
+                       ha='center', va='center', transform=axes[1, 0].transAxes)
+        axes[1, 0].set_title('DBSCAN Clustering')
+    
+    # Plot 5: Visualización PCA con Clustering Jerárquico
+    scatter = axes[1, 1].scatter(X_pca[:, 0], X_pca[:, 1], c=hierarchical_labels, cmap='viridis', alpha=0.6)
+    axes[1, 1].set_xlabel('Componente Principal 1')
+    axes[1, 1].set_ylabel('Componente Principal 2')
+    axes[1, 1].set_title('Clustering Jerárquico (PCA)')
+    axes[1, 1].grid(True, alpha=0.3)
+    plt.colorbar(scatter, ax=axes[1, 1])
+    
+    # Plot 6: Comparación con etiquetas originales (si están disponibles)
+    if y_original is not None:
+        # Convertir etiquetas a números para colorear
+        unique_labels = np.unique(y_original)
+        label_to_num = {label: i for i, label in enumerate(unique_labels)}
+        y_numeric = [label_to_num[label] for label in y_original]
+        
+        scatter = axes[1, 2].scatter(X_pca[:, 0], X_pca[:, 1], c=y_numeric, cmap='viridis', alpha=0.6)
+        axes[1, 2].set_xlabel('Componente Principal 1')
+        axes[1, 2].set_ylabel('Componente Principal 2')
+        axes[1, 2].set_title('Etiquetas Originales (PCA)')
+        axes[1, 2].grid(True, alpha=0.3)
+        plt.colorbar(scatter, ax=axes[1, 2])
+    else:
+        axes[1, 2].text(0.5, 0.5, 'Sin etiquetas\noriginales', 
+                       ha='center', va='center', transform=axes[1, 2].transAxes)
+        axes[1, 2].set_title('Etiquetas Originales')
+    
+    plt.tight_layout()
+    plt.savefig('resultados/clasificacion_no_supervisada.png', dpi=300, bbox_inches='tight')
+    plt.close()
+    
+    # Generar reporte de clustering
+    print("\n📊 RESULTADOS DE CLUSTERING")
+    print("-" * 30)
+    for algoritmo, resultados in resultados_clustering.items():
+        print(f"• {algoritmo}:")
+        print(f"  - Silhouette Score: {resultados['silhouette']:.3f}")
+        print(f"  - Calinski-Harabasz Score: {resultados['calinski']:.0f}")
+        print(f"  - Número de clusters: {len(set(resultados['labels']))}")
+    
+    # Encontrar el mejor algoritmo
+    mejor_algoritmo = max(resultados_clustering.keys(), 
+                         key=lambda x: resultados_clustering[x]['silhouette'])
+    mejor_score = resultados_clustering[mejor_algoritmo]['silhouette']
+    
+    print(f"\n🏆 Mejor algoritmo: {mejor_algoritmo} (Silhouette: {mejor_score:.3f})")
+    
+    return resultados_clustering, mejor_algoritmo, mejor_score
 
 def generar_reporte_final(stats_df, accuracy):
     """
@@ -1110,7 +1286,7 @@ def preparar_datos_clasificacion_flexible(baseline_signal, condiciones_signals, 
     
     return X, y
 
-def generar_reporte_final_flexible(stats_df, accuracy, configuracion):
+def generar_reporte_final_flexible(stats_df, accuracy, configuracion, resultados_clustering=None, mejor_algoritmo=None, mejor_score=None):
     """
     Genera el reporte final flexible con múltiples condiciones.
     """
@@ -1149,6 +1325,25 @@ Identificar diferencias en las señales EEG entre el baseline y las condiciones 
 - **Ventana de análisis**: 2 segundos
 - **Número de clases**: {len(configuracion['condiciones']) + 1}
 
+### Clasificación No Supervisada
+"""
+    
+    if resultados_clustering and mejor_algoritmo:
+        reporte += f"- **Mejor algoritmo**: {mejor_algoritmo}\n"
+        reporte += f"- **Silhouette Score**: {mejor_score:.3f}\n"
+        reporte += f"- **Algoritmos evaluados**: {len(resultados_clustering)}\n\n"
+        
+        reporte += "**Resultados por algoritmo:**\n"
+        for algoritmo, resultados in resultados_clustering.items():
+            reporte += f"- {algoritmo}:\n"
+            reporte += f"  - Silhouette Score: {resultados['silhouette']:.3f}\n"
+            reporte += f"  - Calinski-Harabasz Score: {resultados['calinski']:.0f}\n"
+            reporte += f"  - Número de clusters: {len(set(resultados['labels']))}\n"
+    else:
+        reporte += "- No se realizó análisis de clustering\n"
+
+    reporte += """
+
 ## Conclusiones
 
 1. **Diferencias Espectrales**: Se observan diferencias significativas en las bandas de frecuencia entre condiciones
@@ -1158,7 +1353,8 @@ Identificar diferencias en las señales EEG entre el baseline y las condiciones 
 
 ## Archivos Generados
 - `analisis_exploratorio.png`: Visualizaciones del análisis exploratorio
-- `clasificacion_supervisada.png`: Resultados de clasificación
+- `clasificacion_supervisada.png`: Resultados de clasificación supervisada
+- `clasificacion_no_supervisada.png`: Resultados de clustering no supervisado
 - `reporte_analisis_eeg.md`: Este reporte completo
 - `reporte_analisis_eeg.docx`: Reporte en Word (editable)
 
@@ -1176,9 +1372,9 @@ Identificar diferencias en las señales EEG entre el baseline y las condiciones 
     print("✓ Reporte final generado: resultados/reporte_analisis_eeg.md")
     
     # Generar archivo Word
-    generar_reporte_word_flexible(stats_df, accuracy, configuracion)
+    generar_reporte_word_flexible(stats_df, accuracy, configuracion, resultados_clustering, mejor_algoritmo, mejor_score)
 
-def generar_reporte_word_flexible(stats_df, accuracy, configuracion):
+def generar_reporte_word_flexible(stats_df, accuracy, configuracion, resultados_clustering=None, mejor_algoritmo=None, mejor_score=None):
     """
     Genera el reporte en formato Word flexible con múltiples condiciones.
     """
@@ -1239,6 +1435,34 @@ def generar_reporte_word_flexible(stats_df, accuracy, configuracion):
         clasif.add_run('Método: Random Forest (100 árboles)\n')
         clasif.add_run(f'Número de clases: {len(configuracion["condiciones"]) + 1}')
         
+        # Clasificación no supervisada
+        if resultados_clustering and mejor_algoritmo:
+            doc.add_heading('Clasificación No Supervisada', level=2)
+            clustering = doc.add_paragraph()
+            clustering.add_run(f'Mejor algoritmo: {mejor_algoritmo}\n').bold = True
+            clustering.add_run(f'Silhouette Score: {mejor_score:.3f}\n')
+            clustering.add_run(f'Algoritmos evaluados: {len(resultados_clustering)}')
+            
+            # Tabla de resultados de clustering
+            doc.add_paragraph('Resultados por algoritmo:')
+            table_clustering = doc.add_table(rows=1, cols=4)
+            table_clustering.style = 'Table Grid'
+            
+            # Encabezados
+            hdr_cells = table_clustering.rows[0].cells
+            hdr_cells[0].text = 'Algoritmo'
+            hdr_cells[1].text = 'Silhouette Score'
+            hdr_cells[2].text = 'Calinski-Harabasz'
+            hdr_cells[3].text = 'Número de Clusters'
+            
+            # Datos
+            for algoritmo, resultados in resultados_clustering.items():
+                row_cells = table_clustering.add_row().cells
+                row_cells[0].text = algoritmo
+                row_cells[1].text = f"{resultados['silhouette']:.3f}"
+                row_cells[2].text = f"{resultados['calinski']:.0f}"
+                row_cells[3].text = str(len(set(resultados['labels'])))
+        
         # Guardar documento
         doc.save('resultados/reporte_analisis_eeg.docx')
         print("✓ Reporte Word generado: resultados/reporte_analisis_eeg.docx")
@@ -1292,8 +1516,11 @@ def main():
     # Clasificación supervisada
     accuracy, modelo = clasificacion_supervisada(X, y)
     
+    # Clasificación no supervisada
+    resultados_clustering, mejor_algoritmo, mejor_score = clasificacion_no_supervisada(X, y)
+    
     # Generar reporte final
-    generar_reporte_final_flexible(stats_df, accuracy, configuracion)
+    generar_reporte_final_flexible(stats_df, accuracy, configuracion, resultados_clustering, mejor_algoritmo, mejor_score)
     
     print("\n📊 RESUMEN FINAL")
     print("-" * 30)
@@ -1301,7 +1528,9 @@ def main():
     for key in datos.keys():
         if key.startswith('condicion_'):
             print(f"• {datos[key]['nombre']}: {len(datos[key]['signal'])} muestras")
-    print(f"• Accuracy de clasificación: {accuracy:.4f}")
+    print(f"• Accuracy de clasificación supervisada: {accuracy:.4f}")
+    if mejor_algoritmo:
+        print(f"• Mejor algoritmo de clustering: {mejor_algoritmo} (Score: {mejor_score:.3f})")
     print("• Archivos generados en carpeta 'resultados'")
     
     print("\n🎉 ¡Análisis completado exitosamente!")
