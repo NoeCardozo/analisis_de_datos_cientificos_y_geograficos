@@ -53,10 +53,30 @@ pip install -r requirements.txt
 python main.py
 ```
 
+### Configuración Flexible
+La aplicación permite configurar fácilmente los archivos a analizar:
+
+1. **Configuración por defecto**: Baseline + 2 condiciones (Sin Anteojos, Con Anteojos)
+2. **Modificar configuración**: Al ejecutar, puedes:
+   - Cambiar el archivo de baseline
+   - Agregar nuevas condiciones
+   - Quitar condiciones existentes
+   - Cambiar nombres de condiciones
+   - Listar archivos disponibles
+
+### Opciones de Configuración
+- **Opción 1**: Cambiar archivo de baseline
+- **Opción 2**: Agregar nueva condición
+- **Opción 3**: Quitar condición
+- **Opción 4**: Cambiar nombre de condición
+- **Opción 5**: Listar archivos disponibles
+- **Opción 6**: Finalizar configuración
+
 ### Archivos Generados
 - `analisis_exploratorio.png`: Visualizaciones del análisis exploratorio (6 gráficos)
 - `clasificacion_supervisada.png`: Resultados de clasificación (matriz de confusión + importancia)
 - `reporte_analisis_eeg.md`: Reporte completo en Markdown
+- `reporte_analisis_eeg.docx`: Reporte completo en Word (editable)
 
 ## Metodología
 
@@ -87,6 +107,7 @@ python main.py
 - **scipy**: Funciones estadísticas y procesamiento de señales
 - **scikit-learn**: Algoritmos de machine learning
 - **seaborn**: Visualizaciones estadísticas avanzadas
+- **python-docx**: Generación de reportes en Word
 
 ## Resultados
 

@@ -28,6 +28,13 @@ wheels/
 MANIFEST
 
 # Archivos de resultados (opcional - puedes comentar si quieres incluirlos)
+resultados/
+*.png
+*.csv
+*.txt
+*.md
+*.docx
+
 # Archivos del sistema
 .DS_Store
 .DS_Store?
