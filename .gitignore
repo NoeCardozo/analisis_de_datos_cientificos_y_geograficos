@@ -29,6 +29,7 @@ MANIFEST
 
 # Archivos de resultados (opcional - puedes comentar si quieres incluirlos)
 resultados/
+resultados/*
 *.png
 *.csv
 *.txt
