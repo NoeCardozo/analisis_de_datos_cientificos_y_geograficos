@@ -256,6 +256,12 @@ def generar_informe_word(datos_eeg, output_path="Informe_EEG_Analisis.docx"):
         doc.add_paragraph('• <b>Filtro pasabanda beta (13-30 Hz):</b> Aísla la actividad beta')
         doc.add_paragraph('• <b>Filtro pasabanda theta (4-8 Hz):</b> Aísla la actividad theta')
         
+        # Agregar gráfico media móvil si existe
+        if os.path.exists('imagenes_informe/comparacion_ma.png'):
+            doc.add_heading('Filtro Temporal (Media Móvil)', level=3)
+            doc.add_paragraph('El gráfico siguiente compara la señal original con la versión suavizada mediante un filtro de media móvil (ventana de 5 muestras), evidenciando la reducción de ruido de alta frecuencia.')
+            doc.add_picture('imagenes_informe/comparacion_ma.png', width=Inches(6))
+        
         # Agregar gráfico de comparación filtrada si existe
         if os.path.exists('imagenes_informe/comparacion_filtrada.png'):
             doc.add_heading('Comparación de Señales Filtradas', level=3)
@@ -267,6 +273,26 @@ def generar_informe_word(datos_eeg, output_path="Informe_EEG_Analisis.docx"):
             doc.add_heading('Análisis del Espectro de Frecuencia', level=3)
             doc.add_paragraph('El siguiente gráfico muestra el análisis del espectro de frecuencia para cada condición, permitiendo identificar las bandas de frecuencia dominantes.')
             doc.add_picture('imagenes_informe/espectro_frecuencia.png', width=Inches(6))
+    
+    # ---------------------------------------------------------------------
+    # Sección de clasificación automática y matriz de confusión
+    # ---------------------------------------------------------------------
+    if os.path.exists('imagenes_informe/confusion_matrix.png'):
+        doc.add_heading('Clasificación Automática de Condiciones', level=2)
+        # Intentar cargar métricas guardadas si existen
+        accuracy_txt = None
+        metrics_path = 'imagenes_informe/classification_metrics.json'
+        if os.path.exists(metrics_path):
+            import json
+            with open(metrics_path, 'r') as jf:
+                metrics = json.load(jf)
+            accuracy_txt = metrics.get('accuracy')
+        if accuracy_txt is not None:
+            doc.add_paragraph(f'Se entrenó un clasificador Random Forest empleando ventanas de 2 segundos por señal. La exactitud obtenida fue del {accuracy_txt*100:.2f}%. La siguiente figura muestra la matriz de confusión.')
+        else:
+            doc.add_paragraph('Se entrenó un clasificador Random Forest utilizando características temporales y de potencia de banda (ventanas de 2 segundos). La siguiente figura muestra la matriz de confusión resultante.')
+        doc.add_picture('imagenes_informe/confusion_matrix.png', width=Inches(5))
+        doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
     
     # Conclusiones
     doc.add_heading('Conclusiones', level=1)
