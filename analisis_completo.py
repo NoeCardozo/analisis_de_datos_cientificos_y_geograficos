@@ -141,7 +141,7 @@ def band_power(eeg, fs, fmin, fmax):
     """Potencia integrada en banda [fmin, fmax]"""
     freqs, pxx = welch(eeg, fs, nperseg=min(1024, len(eeg)))
     idx = (freqs >= fmin) & (freqs <= fmax)
-    return np.trapz(pxx[idx], freqs[idx])
+    return np.trapezoid(pxx[idx], freqs[idx])
 
 
 from scipy.signal import find_peaks, detrend, welch

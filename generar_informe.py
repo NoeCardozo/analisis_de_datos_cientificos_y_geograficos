@@ -28,6 +28,20 @@ from docx.shared import Inches, Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_ALIGN_VERTICAL
 import io
+import json
+
+# ---- fragmentos de código que se mostrarán en el informe ----
+CODE_SNIPPETS = {
+    "Filtro temporal – media móvil":
+        "def moving_average(x, w=5):\n    return np.convolve(x, np.ones(w)/w, mode='same')",
+    "Filtro pasabanda (Butterworth)":
+        "def butter_bandpass_filter(data, lowcut, highcut, fs, order=4):\n    nyq = 0.5*fs\n    b, a = butter(order, [lowcut/nyq, highcut/nyq], 'band')\n    return lfilter(b, a, data)",
+    "Extracción de features":
+        "def compute_features(seg, fs):\n    ptp = np.ptp(seg)  # rango pico a pico\n    # ... potencias de banda, Hjorth, picos ...",
+    "Entrenamiento Random Forest":
+        "clf = RandomForestClassifier(n_estimators=200, random_state=42)\nclf.fit(X_train, y_train)"
+}
+
 import os
 from datetime import datetime
 
@@ -175,15 +189,51 @@ def generar_informe_word(datos_eeg, output_path="Informe_EEG_Analisis.docx"):
     # Crear documento
     doc = Document()
     
-    # Título principal
-    title = doc.add_heading('Análisis de Datos EEG - Múltiples Condiciones', 0)
-    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    
-    # Información del proyecto
-    doc.add_heading('Información del Proyecto', level=1)
-    doc.add_paragraph(f'Fecha de generación: {datetime.now().strftime("%d/%m/%Y %H:%M:%S")}')
-    doc.add_paragraph('Análisis de señales EEG de 7 condiciones experimentales diferentes.')
-    doc.add_paragraph('Condiciones analizadas: Baseline, Pestañeos, Ojos cerrados, Mirar con anteojos, Mirar sin anteojos, Escuchando español, Escuchando inglés.')
+    # Portada personalizada
+    portada = [
+        'Análisis de Datos Científicos y Geográficos',
+        'Maestría en Ciencia de Datos',
+        'Comisión: ECD.2024.C',
+        '',
+        'Unidad 3: Datos Científicos',
+        '',
+        'TRABAJO PRÁCTICO – Análisis de Datos EEG',
+        '',
+        'Estudiante: Noelia Cardozo – DNI 92964666',
+        'Profesor: Rodrigo Ramele',
+        'Sede Distrito Financiero – San Martín 202, CABA',
+        '',
+        f'Fecha de generación: {datetime.now().strftime("%d/%m/%Y %H:%M:%S")}'
+    ]
+    for line in portada:
+        p = doc.add_paragraph(line)
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        if line.startswith('Análisis'):
+            p.runs[0].bold = True
+            p.runs[0].font.size = Pt(20)
+    doc.add_page_break()
+
+    # Índice
+    doc.add_heading('INDICE', level=1)
+    idx = doc.add_paragraph()
+    idx.add_run('1. Introducción').bold = True
+    idx.add_run('\t\t\t3')
+    idx = doc.add_paragraph()
+    idx.add_run('2. Desarrollo del trabajo').bold = True
+    idx.add_run('\t\t3')
+    idx = doc.add_paragraph()
+    idx.add_run('3. Conclusión').bold = True
+    idx.add_run('\t\t\t\t6')
+    doc.add_page_break()
+
+    # 1. Introducción
+    doc.add_heading('1. Introducción', level=1)
+    doc.add_paragraph('En el siguiente trabajo se realizó el análisis de señales EEG de 7 condiciones experimentales diferentes. Las condiciones analizadas fueron: Baseline, Pestañeos, Ojos cerrados, Mirar con anteojos, Mirar sin anteojos, Escuchando español y Escuchando inglés.')
+    doc.add_paragraph('Los datos fueron adquiridos con una frecuencia de muestreo de 512 Hz y una duración de aproximadamente 60 segundos por condición.')
+
+    # 2. Desarrollo del trabajo
+    doc.add_heading('2. Desarrollo del trabajo', level=1)
+    doc.add_paragraph('Se creó un pipeline único que, al ejecutar main.py, carga los 7 bloques EEG, verifica continuidad del counter, aplica media-móvil, filtros pasa-bajos y pasabandas, segmenta en ventanas de 1 s, extrae 13 características (estadísticas, potencias de banda, Hjorth, etc.), entrena un Random Forest que clasifica las condiciones (~54 % de acierto) y genera todas las gráficas (señal vs media-móvil, filtradas, PSD, matriz de confusión).')
     
     # Resumen ejecutivo
     doc.add_heading('Resumen Ejecutivo', level=1)
@@ -237,6 +287,14 @@ def generar_informe_word(datos_eeg, output_path="Informe_EEG_Analisis.docx"):
     doc.add_paragraph('La condición de "Ojos Cerrados" muestra la menor variabilidad, lo cual es consistente con la literatura que indica un aumento de la actividad alfa (8-13 Hz) cuando los ojos están cerrados. La condición de "Pestañeos" muestra la mayor variabilidad, lo cual es esperado debido a los eventos transitorios que representan los pestañeos.')
     
     # Gráficos
+    # Fragmentos de código relevantes
+    doc.add_heading('Fragmentos de código relevantes', level=1)
+    for titulo, code in CODE_SNIPPETS.items():
+        doc.add_paragraph(f'• {titulo}', style='List Bullet')
+        run = doc.add_paragraph().add_run(code)
+        run.font.name = 'Courier New'
+
+    # ------------------------------
     doc.add_heading('Visualización de Datos', level=1)
     
     # Crear directorio para imágenes si no existe
@@ -328,6 +386,80 @@ def generar_informe_word(datos_eeg, output_path="Informe_EEG_Analisis.docx"):
     print(f"Informe generado exitosamente: {output_path}")
     return output_path
 
+# -----------------------------------------------------------------------------
+# Versión Markdown compacta
+# -----------------------------------------------------------------------------
+
+def generar_informe_md(datos_eeg, md_path="Informe_EEG_Analisis.md"):
+    """Genera un informe Markdown sencillo con las mismas secciones clave."""
+    accuracy = None
+    metrics_file = os.path.join("imagenes_informe", "classification_metrics.json")
+    if os.path.exists(metrics_file):
+        with open(metrics_file) as jf:
+            try:
+                accuracy = json.load(jf).get("accuracy")
+            except json.JSONDecodeError:
+                pass
+
+    def img(title, path):
+        return f"### {title}\n![{title}]({path})\n" if os.path.exists(path) else ""
+
+    # ----- plantilla encabezado e índice -----
+    lines = [
+        "# Análisis de Datos Científicos y Geográficos\n",
+        "Maestría en Ciencia de Datos  \n",
+        "Comisión: ECD.2024.C  \n",
+        "Unidad 3: Datos Científicos  \n",
+        "TRABAJO PRÁCTICO – Análisis de Datos EEG  \n",
+        "Estudiante: **Noelia Cardozo – DNI 92964666**  \n",
+        "Profesor: Rodrigo Ramele  \n",
+        "Sede Distrito Financiero – San Martín 202, CABA  \n",
+        f"Fecha de generación: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}  \n",
+        "\n### INDICE\n",
+        "1. Introducción   3  \n",
+        "2. Desarrollo del trabajo  3  \n",
+        "3. Conclusión    6  \n",
+        "\n## 1. Introducción\n",
+        "En el siguiente trabajo se realizó el análisis de señales EEG de 7 condiciones experimentales diferentes. Las condiciones analizadas fueron: Baseline, Pestañeos, Ojos cerrados, Mirar con anteojos, Mirar sin anteojos, Escuchando español y Escuchando inglés.\n",
+        "Los datos fueron adquiridos con una frecuencia de muestreo de 512 Hz y una duración de aproximadamente 60 segundos por condición.\n",
+        "\n## 2. Desarrollo del trabajo\n",
+        "Se creó un pipeline único que, al ejecutar `main.py`, carga los 7 bloques EEG, verifica continuidad del `counter`, aplica media-móvil, filtros pasa-bajos y pasabandas, segmenta en ventanas de 1 s, extrae 13 características (estadísticas, potencias de banda, Hjorth, etc.), entrena un Random Forest que clasifica las condiciones (~54 % de acierto) y genera todas las gráficas (señal vs media-móvil, filtradas, PSD, matriz de confusión).\n",
+        "\n### Resumen Ejecutivo\n",
+        "Este informe presenta un análisis comparativo de señales EEG registradas bajo diferentes condiciones experimentales. Los datos fueron adquiridos con una frecuencia de muestreo aproximada de 512 Hz y una duración de aproximadamente 60 s por condición.\n",
+        "\n### Estadísticas Generales\n",
+        "| Condición | Muestras | Media | Std | Min | Max | Rango | Duración (s) |\n",
+        "|---|---|---|---|---|---|---|---|",
+    ]
+
+    for nombre, datos in datos_eeg.items():
+        s = calcular_estadisticas(datos["eeg"], datos["timestamps"])
+        lines.append(f"| {nombre.replace('_',' ').title()} | {len(datos['eeg'])} | {s['media']:.2f} | {s['std']:.2f} | {s['min']} | {s['max']} | {s['rango']:.0f} | {s['duracion']:.1f} |")
+
+    # Añadir imágenes
+    lines += [
+        "\n## Fragmentos de código relevantes\n", *[f"**{t}**\n```python\n{c}\n```\n" for t,c in CODE_SNIPPETS.items()], "\n## Visualizaciones\n",
+        img("Filtro temporal – media móvil", "imagenes_informe/comparacion_ma.png"),
+        img("Señales filtradas", "imagenes_informe/comparacion_filtrada.png"),
+        img("PSD (Welch)", "imagenes_informe/espectro_frecuencia.png"),
+        img("Estadísticas comparativas", "imagenes_informe/estadisticas_comparativas.png"),
+    ]
+    if accuracy is not None:
+        lines.append(f"\n## Clasificación – Exactitud {accuracy*100:.2f}%\n")
+        lines.append(img("Matriz de confusión", "imagenes_informe/confusion_matrix.png"))
+
+    lines += [
+        "\n## 3. Conclusión",
+        "* La señal de **Ojos cerrados** exhibe mayor potencia alfa y menor variabilidad.",
+        "* **Pestañeos** muestra la mayor dispersión por los pulsos de parpadeo.",
+        "* El modelo distingue las 7 condiciones con precisión moderada.",
+    ]
+
+    with open(md_path, "w", encoding="utf-8") as md:
+        md.write("\n".join([l for l in lines if l]))
+    print(f"Informe Markdown generado: {md_path}")
+
+# -----------------------------------------------------------------------------
+
 def main():
     """Función principal"""
     print("=== Generador de Informe EEG ===")
@@ -368,7 +500,8 @@ def main():
     print("\nGenerando informe en Word...")
     try:
         output_file = generar_informe_word(datos_eeg)
-        print(f"✅ Informe generado exitosamente: {output_file}")
+        print(f"✅ Informe Word: {output_file}")
+        generar_informe_md(datos_eeg)
     except Exception as e:
         print(f"❌ Error generando informe: {e}")
         print("Asegúrate de tener instalado python-docx: pip install python-docx")
