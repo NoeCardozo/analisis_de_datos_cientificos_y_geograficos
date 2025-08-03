@@ -361,10 +361,10 @@ def main():
                 'eeg_filtrado': eeg_filtrado
             }
             
-            print(f'✓ {nombre}: {len(eeg)} muestras, fs={fs:.1f} Hz')
+            print(f'[OK] {nombre}: {len(eeg)} muestras, fs={fs:.1f} Hz')
             
         except Exception as e:
-            print(f'✗ Error cargando {nombre}: {e}')
+            print(f'[ERROR] Error cargando {nombre}: {e}')
     
     if not datos_eeg:
         print("Error: No se pudieron cargar datos EEG")
@@ -379,17 +379,17 @@ def main():
     # Generar gráficos con filtros aplicados
     print("\nGenerando gráficos con filtros aplicados...")
     
-        # Gráfico comparativo media móvil
+    # Gráfico comparativo media móvil
     grafico_ma_path = crear_grafico_ma(datos_eeg, 'imagenes_informe/comparacion_ma.png')
-    print(f"✓ Gráfico media móvil: {grafico_ma_path}")
+    print(f"[OK] Gráfico media móvil: {grafico_ma_path}")
 
     # Gráfico comparativo con filtros
     grafico_filtrado_path = crear_grafico_comparativo_filtrado(datos_eeg, 'imagenes_informe/comparacion_filtrada.png')
-    print(f"✓ Gráfico comparativo filtrado: {grafico_filtrado_path}")
+    print(f"[OK] Gráfico comparativo filtrado: {grafico_filtrado_path}")
     
     # Gráfico de espectro de frecuencia
     grafico_espectro_path = crear_grafico_espectro_frecuencia(datos_eeg, 'imagenes_informe/espectro_frecuencia.png')
-    print(f"✓ Gráfico de espectro: {grafico_espectro_path}")
+    print(f"[OK] Gráfico de espectro: {grafico_espectro_path}")
     
     # Estadísticas comparativas (usando datos filtrados)
     print("\n=== ESTADÍSTICAS COMPARATIVAS (DATOS FILTRADOS) ===")

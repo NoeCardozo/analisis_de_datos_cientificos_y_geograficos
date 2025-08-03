@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 ==================
 Generador de Informe EEG
@@ -9,6 +10,15 @@ de múltiples condiciones experimentales.
 Autor: Noelia Cardozo
 Fecha: 2025
 """
+
+import sys
+import os
+
+# Configurar codificación UTF-8 para Windows
+if sys.platform.startswith('win'):
+    import codecs
+    sys.stdout = codecs.getwriter('utf-8')(sys.stdout.detach())
+    sys.stderr = codecs.getwriter('utf-8')(sys.stderr.detach())
 
 import pandas as pd
 import numpy as np
