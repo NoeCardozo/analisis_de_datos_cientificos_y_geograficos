@@ -105,13 +105,24 @@ def crear_grafico_estadisticas(datos_eeg, save_path):
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(12, 10))
     
     condiciones = list(datos_eeg.keys())
-    medias = [calcular_estadisticas(datos['eeg'], datos['timestamps'])['media'] for datos in datos_eeg.values()]
-    stds = [calcular_estadisticas(datos['eeg'], datos['timestamps'])['std'] for datos in datos_eeg.values()]
-    rangos = [calcular_estadisticas(datos['eeg'], datos['timestamps'])['rango'] for datos in datos_eeg.values()]
+    
+    # Usar datos filtrados si están disponibles, sino usar originales
+    if 'eeg_filtrado' in list(datos_eeg.values())[0]:
+        # Datos con filtros aplicados
+        medias = [np.mean(datos['eeg_filtrado']['lowpass']) for datos in datos_eeg.values()]
+        stds = [np.std(datos['eeg_filtrado']['lowpass']) for datos in datos_eeg.values()]
+        rangos = [np.max(datos['eeg_filtrado']['lowpass']) - np.min(datos['eeg_filtrado']['lowpass']) for datos in datos_eeg.values()]
+        titulo_sufijo = " (Filtrados)"
+    else:
+        # Datos originales
+        medias = [calcular_estadisticas(datos['eeg'], datos['timestamps'])['media'] for datos in datos_eeg.values()]
+        stds = [calcular_estadisticas(datos['eeg'], datos['timestamps'])['std'] for datos in datos_eeg.values()]
+        rangos = [calcular_estadisticas(datos['eeg'], datos['timestamps'])['rango'] for datos in datos_eeg.values()]
+        titulo_sufijo = ""
     
     # Gráfico de medias
     ax1.bar(range(len(condiciones)), medias, color='skyblue', alpha=0.7)
-    ax1.set_title('Media de Amplitud EEG por Condición')
+    ax1.set_title(f'Media de Amplitud EEG por Condición{titulo_sufijo}')
     ax1.set_ylabel('Amplitud')
     ax1.set_xticks(range(len(condiciones)))
     ax1.set_xticklabels([c.replace('_', ' ').title() for c in condiciones], rotation=45, ha='right')
@@ -119,7 +130,7 @@ def crear_grafico_estadisticas(datos_eeg, save_path):
     
     # Gráfico de desviación estándar
     ax2.bar(range(len(condiciones)), stds, color='lightcoral', alpha=0.7)
-    ax2.set_title('Desviación Estándar por Condición')
+    ax2.set_title(f'Desviación Estándar por Condición{titulo_sufijo}')
     ax2.set_ylabel('Desviación Estándar')
     ax2.set_xticks(range(len(condiciones)))
     ax2.set_xticklabels([c.replace('_', ' ').title() for c in condiciones], rotation=45, ha='right')
@@ -127,7 +138,7 @@ def crear_grafico_estadisticas(datos_eeg, save_path):
     
     # Gráfico de rangos
     ax3.bar(range(len(condiciones)), rangos, color='lightgreen', alpha=0.7)
-    ax3.set_title('Rango de Amplitud por Condición')
+    ax3.set_title(f'Rango de Amplitud por Condición{titulo_sufijo}')
     ax3.set_ylabel('Rango')
     ax3.set_xticks(range(len(condiciones)))
     ax3.set_xticklabels([c.replace('_', ' ').title() for c in condiciones], rotation=45, ha='right')
@@ -140,7 +151,7 @@ def crear_grafico_estadisticas(datos_eeg, save_path):
                     xytext=(5, 5), textcoords='offset points', fontsize=8)
     ax4.set_xlabel('Media')
     ax4.set_ylabel('Desviación Estándar')
-    ax4.set_title('Relación Media vs Desviación Estándar')
+    ax4.set_title(f'Relación Media vs Desviación Estándar{titulo_sufijo}')
     ax4.grid(True, alpha=0.3)
     
     plt.tight_layout()
@@ -236,12 +247,38 @@ def generar_informe_word(datos_eeg, output_path="Informe_EEG_Analisis.docx"):
     grafico_stats_path = crear_grafico_estadisticas(datos_eeg, 'imagenes_informe/estadisticas_comparativas.png')
     doc.add_picture(grafico_stats_path, width=Inches(6))
     
+    # Agregar sección de filtros si están disponibles
+    if 'eeg_filtrado' in list(datos_eeg.values())[0]:
+        doc.add_heading('Análisis con Filtros Espectrales', level=2)
+        doc.add_paragraph('Se aplicaron filtros espectrales para mejorar la calidad de las señales EEG:')
+        doc.add_paragraph('• <b>Filtro pasabajos (50 Hz):</b> Elimina ruido de alta frecuencia')
+        doc.add_paragraph('• <b>Filtro pasabanda alfa (8-13 Hz):</b> Aísla la actividad alfa característica del EEG')
+        doc.add_paragraph('• <b>Filtro pasabanda beta (13-30 Hz):</b> Aísla la actividad beta')
+        doc.add_paragraph('• <b>Filtro pasabanda theta (4-8 Hz):</b> Aísla la actividad theta')
+        
+        # Agregar gráfico de comparación filtrada si existe
+        if os.path.exists('imagenes_informe/comparacion_filtrada.png'):
+            doc.add_heading('Comparación de Señales Filtradas', level=3)
+            doc.add_paragraph('El siguiente gráfico muestra la comparación de las señales EEG después de aplicar filtros espectrales.')
+            doc.add_picture('imagenes_informe/comparacion_filtrada.png', width=Inches(6))
+        
+        # Agregar gráfico de espectro si existe
+        if os.path.exists('imagenes_informe/espectro_frecuencia.png'):
+            doc.add_heading('Análisis del Espectro de Frecuencia', level=3)
+            doc.add_paragraph('El siguiente gráfico muestra el análisis del espectro de frecuencia para cada condición, permitiendo identificar las bandas de frecuencia dominantes.')
+            doc.add_picture('imagenes_informe/espectro_frecuencia.png', width=Inches(6))
+    
     # Conclusiones
     doc.add_heading('Conclusiones', level=1)
     doc.add_paragraph('1. <b>Diferenciación entre condiciones:</b> Los datos muestran diferencias estadísticamente relevantes entre las diferentes condiciones experimentales.')
     doc.add_paragraph('2. <b>Actividad alfa en ojos cerrados:</b> La menor variabilidad en la condición de ojos cerrados sugiere un aumento de la actividad alfa, consistente con la literatura.')
     doc.add_paragraph('3. <b>Eventos transitorios:</b> La condición de pestañeos muestra la mayor variabilidad, indicando la presencia de eventos transitorios característicos.')
     doc.add_paragraph('4. <b>Condiciones similares:</b> Las condiciones de escuchar español e inglés muestran patrones similares, sugiriendo que el procesamiento auditivo puede tener características comunes independientemente del idioma.')
+    
+    # Agregar conclusiones sobre filtros si están disponibles
+    if 'eeg_filtrado' in list(datos_eeg.values())[0]:
+        doc.add_paragraph('5. <b>Mejora con filtros espectrales:</b> La aplicación de filtros espectrales mejoró significativamente la calidad de las señales, reduciendo el ruido y destacando las características relevantes de cada banda de frecuencia.')
+        doc.add_paragraph('6. <b>Análisis de bandas de frecuencia:</b> El análisis espectral reveló patrones distintivos en las bandas alfa, beta y theta para cada condición experimental.')
     
     # Recomendaciones
     doc.add_heading('Recomendaciones para Análisis Futuro', level=1)

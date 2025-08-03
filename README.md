@@ -1,144 +1,245 @@
-# Análisis EEG - Protocolo Experimental
+# Análisis de Datos EEG con Filtros Espectrales
 
-## Descripción
-Implementación del análisis de datos EEG según el protocolo experimental establecido. 
-Compara el baseline (estado de reposo) con condiciones específicas de mirar con y sin anteojos 
-para detectar diferencias en bandas de frecuencia, especialmente en la banda alfa (8-13 Hz) 
-y frecuencias altas (30-50 Hz).
+## 📋 Descripción del Proyecto
 
-## Objetivo
-Identificar patrones específicos en las señales EEG que permitan distinguir entre:
-- **Baseline**: Estado de reposo (no hace nada particular)
-- **Mirar Sin Anteojos**: Condición que puede mostrar aumento en señales de alta frecuencia (30-50 Hz)
-- **Mirar Con Anteojos**: Condición que puede mostrar aumento en potencia de banda alfa (aburrimiento)
+Este proyecto realiza un análisis completo de señales EEG registradas bajo 7 condiciones experimentales diferentes, aplicando filtros espectrales para mejorar la calidad de los datos y generar un informe profesional en Word.
 
-## Estructura del Proyecto
+**Autor:** Noelia Cardozo  
+**Fecha:** 2025
+
+## 🧠 Condiciones Experimentales Analizadas
+
+1. **Baseline** - Estado de reposo sin actividad específica
+2. **Pestañeos** - Eventos transitorios de pestañeo
+3. **Ojos cerrados** - Actividad con ojos cerrados (aumento de actividad alfa)
+4. **Mirar con anteojos** - Actividad visual con anteojos
+5. **Mirar sin anteojos** - Actividad visual sin anteojos
+6. **Escuchando español** - Procesamiento auditivo en español
+7. **Escuchando inglés** - Procesamiento auditivo en inglés
+
+## 📁 Estructura del Proyecto
+
 ```
 python-project/
-├── main.py                    # Aplicación principal con análisis completo
-├── requirements.txt           # Dependencias del proyecto
-├── README.md                 # Este archivo
-├── .gitignore               # Archivos excluidos del repositorio
+├── main.py                          # 🚀 Script principal (ejecuta todo)
+├── analisis_completo.py             # 📊 Análisis con filtros espectrales
+├── generar_informe.py               # 📄 Generador de informe en Word
+├── filter_spectral.py               # 🔧 Filtros espectrales (referencia)
 ├── data/
 │   └── dataNoelia/
 │       └── carodata/
-│           ├── carobaseline.dat           # Datos de referencia
-│           ├── caromirarsinanteojos.dat   # Mirar sin anteojos
-│           └── caromirarconanteojos.dat   # Mirar con anteojos
-├── resultados/               # Archivos generados por el análisis
-└── venv/                    # Entorno virtual (excluido del repositorio)
+│           ├── carobaseline.dat
+│           ├── caropestaneos.dat
+│           ├── caroojoscerrados.dat
+│           ├── caromirarconanteojos.dat
+│           ├── caromirarsinanteojos.dat
+│           ├── caroespaniol.dat
+│           └── caroenglish.dat
+├── imagenes_informe/                # 📈 Imágenes generadas
+│   ├── comparacion_señales.png
+│   ├── estadisticas_comparativas.png
+│   ├── comparacion_filtrada.png
+│   └── espectro_frecuencia.png
+├── Informe_EEG_Analisis.docx        # 📋 Informe final en Word
+└── README_EEG_Analysis.md           # 📖 Este archivo
 ```
 
-## Instalación
+## 🚀 Instalación y Configuración
 
-1. **Crear entorno virtual:**
+### 1. Requisitos Previos
+- Python 3.8 o superior
+- pip (gestor de paquetes de Python)
+
+### 2. Instalación de Dependencias
+
 ```bash
+# Crear entorno virtual (recomendado)
 python -m venv venv
-source venv/bin/activate  # En macOS/Linux
-source venv/Script/activate  # En Windows
 
-# o
-venv\Scripts\activate     # En Windows
+# Activar entorno virtual
+# En Windows:
+venv\Scripts\activate
+# En macOS/Linux:
+source venv/bin/activate
+
+# Instalar dependencias
+pip install pandas numpy matplotlib python-docx scipy
 ```
 
-2. **Instalar dependencias:**
+### 3. Verificar Instalación
+
 ```bash
-pip install -r requirements.txt
+python -c "import pandas, numpy, matplotlib, docx, scipy; print('✅ Todas las dependencias instaladas correctamente')"
 ```
 
-## Uso
+## 📊 Uso del Proyecto
 
-### Ejecutar Análisis Completo
+### 🎯 Opción Principal (Recomendada)
+
 ```bash
 python main.py
 ```
 
-### Configuración Flexible
-La aplicación permite configurar fácilmente los archivos a analizar:
+Este comando ejecuta automáticamente:
+1. **PASO 1**: Análisis completo con filtros espectrales
+2. **PASO 2**: Generación del informe en Word
 
-1. **Configuración por defecto**: Baseline + 2 condiciones (Sin Anteojos, Con Anteojos)
-2. **Modificar configuración**: Al ejecutar, puedes:
-   - Cambiar el archivo de baseline
-   - Agregar nuevas condiciones
-   - Quitar condiciones existentes
-   - Cambiar nombres de condiciones
-   - Listar archivos disponibles
+### 🔧 Opciones Individuales
 
-### Opciones de Configuración
-- **Opción 1**: Cambiar archivo de baseline
-- **Opción 2**: Agregar nueva condición
-- **Opción 3**: Quitar condición
-- **Opción 4**: Cambiar nombre de condición
-- **Opción 5**: Listar archivos disponibles
-- **Opción 6**: Finalizar configuración
+#### Solo Análisis con Filtros
+```bash
+python analisis_completo.py
+```
 
-### Archivos Generados
-- `analisis_exploratorio.png`: Visualizaciones del análisis exploratorio (6 gráficos)
-- `clasificacion_supervisada.png`: Resultados de clasificación (matriz de confusión + importancia)
-- `reporte_analisis_eeg.md`: Reporte completo en Markdown
-- `reporte_analisis_eeg.docx`: Reporte completo en Word (editable)
+#### Solo Generar Informe
+```bash
+python generar_informe.py
+```
 
-## Metodología
+## 🔧 Filtros Espectrales Aplicados
 
-### 1. Análisis Exploratorio
-- **Comparación temporal**: Señales en dominio del tiempo
-- **Análisis espectral**: Densidad espectral de potencia (PSD)
-- **Bandas de frecuencia**: Comparación de potencias por bandas
-- **Estadísticas descriptivas**: Media, desviación estándar, skewness, kurtosis
+### Tipos de Filtros
+1. **Filtro Pasabajos (50 Hz)** - Elimina ruido de alta frecuencia
+2. **Filtro Pasabanda Alfa (8-13 Hz)** - Aísla actividad alfa característica
+3. **Filtro Pasabanda Beta (13-30 Hz)** - Aísla actividad beta
+4. **Filtro Pasabanda Theta (4-8 Hz)** - Aísla actividad theta
 
-### 2. Extracción de Características Espectrales
-- **Delta** (0.5-4 Hz): Ondas lentas
-- **Theta** (4-8 Hz): Ondas theta
-- **Alpha** (8-13 Hz): Ondas alfa (clave para detectar aburrimiento)
-- **Beta** (13-30 Hz): Ondas beta
-- **Gamma** (30-50 Hz): Ondas gamma (alta frecuencia)
+### Beneficios
+- ✅ **Mejor SNR** (Signal-to-Noise Ratio)
+- ✅ **Reducción de artefactos** y ruido
+- ✅ **Identificación clara** de bandas de frecuencia
+- ✅ **Análisis más preciso** de patrones EEG
 
-### 3. Clasificación Supervisada
-- **Algoritmo**: Random Forest Classifier
-- **Ventana de análisis**: 2 segundos con 50% de solapamiento
-- **División de datos**: 70% entrenamiento / 30% prueba
-- **Métricas**: Accuracy, precisión, recall, F1-score
+## 📈 Características del Análisis
 
-## Dependencias
+### Estadísticas Calculadas
+- **Media** de amplitud EEG (original y filtrada)
+- **Desviación estándar** (variabilidad)
+- **Valores mínimo y máximo**
+- **Rango** de amplitud
+- **Duración** del registro
+- **Frecuencia de muestreo** estimada
+- **Potencia en bandas** alfa, beta y theta
 
-- **numpy**: Procesamiento de datos numéricos
-- **matplotlib**: Generación de visualizaciones
-- **pandas**: Análisis y manipulación de datos
-- **scipy**: Funciones estadísticas y procesamiento de señales
-- **scikit-learn**: Algoritmos de machine learning
-- **seaborn**: Visualizaciones estadísticas avanzadas
-- **python-docx**: Generación de reportes en Word
+### Visualizaciones Generadas
+1. **Comparación de señales** - Primeros 10 segundos de todas las condiciones
+2. **Gráficos individuales** - 20 segundos de cada condición
+3. **Análisis estadístico** - 4 gráficos comparativos
+4. **Comparación filtrada** - Original vs filtrada
+5. **Espectro de frecuencia** - Análisis espectral completo
 
-## Resultados
+## 📄 Informe Generado
 
-### Análisis Exploratorio
-La aplicación genera una figura con 6 gráficos:
-1. **Señales temporales**: Comparación en dominio del tiempo
-2. **Densidad espectral**: PSD de las tres condiciones
-3. **Potencias por banda**: Comparación de bandas de frecuencia
-4. **Distribuciones**: Histogramas de amplitudes
-5. **Estadísticas**: Tabla comparativa de métricas
-6. **Diferencias**: Diferencias respecto al baseline
+El informe en Word (`Informe_EEG_Analisis.docx`) incluye:
 
-### Clasificación Supervisada
-- **Matriz de confusión**: Visualización de predicciones vs reales
-- **Importancia de características**: Ranking de características más discriminativas
-- **Métricas de rendimiento**: Accuracy, precisión, recall por clase
+### Secciones Principales
+1. **Información del Proyecto** - Metadatos y descripción
+2. **Resumen Ejecutivo** - Descripción general del análisis
+3. **Estadísticas Generales** - Tabla completa de estadísticas
+4. **Análisis de Resultados** - Interpretación de los datos
+5. **Visualización de Datos** - Gráficos embebidos
+6. **Análisis con Filtros Espectrales** - Nueva sección con filtros
+7. **Conclusiones** - Hallazgos principales
+8. **Recomendaciones** - Sugerencias para análisis futuro
 
-## Insights Clave
+### Hallazgos Principales
+- **Ojos cerrados**: Menor variabilidad (actividad alfa aumentada)
+- **Pestañeos**: Mayor variabilidad (eventos transitorios)
+- **Condiciones auditivas**: Patrones similares entre español e inglés
+- **Actividad visual**: Diferencias entre usar o no anteojos
+- **Mejora con filtros**: Reducción significativa de ruido
 
-1. **Baseline como referencia**: Funciona efectivamente para detectar cambios en otras condiciones
-2. **Diferencias espectrales**: Las condiciones muestran patrones diferenciables en bandas de frecuencia
-3. **Alta precisión**: El modelo puede distinguir entre las tres condiciones con alta precisión
-4. **Características discriminativas**: Las potencias en bandas beta y gamma son las más importantes
+## 🔧 Personalización
 
-## Protocolo Experimental
+### Modificar Condiciones
+Para agregar o cambiar condiciones, edita el diccionario `condiciones` en `analisis_completo.py`:
 
-Este análisis implementa el protocolo experimental que busca:
-- Detectar cambios en la banda alfa (8-13 Hz) para identificar aburrimiento
-- Identificar aumentos en frecuencias altas (30-50 Hz) en condiciones de mirar
-- Utilizar el baseline como referencia para detectar patrones específicos
-- Implementar clasificación supervisada para automatizar la detección
+```python
+condiciones = {
+    'nueva_condicion': 'ruta/al/archivo.dat',
+    # ... otras condiciones
+}
+```
 
-## Autor
-Análisis EEG - 2025
+### Cambiar Configuración de Filtros
+Modifica los parámetros en `aplicar_filtros_eeg()` en `analisis_completo.py`:
+- Frecuencia de corte pasabajos: `cutoff=50`
+- Bandas de frecuencia: `lowcut=8, highcut=13`
+- Orden del filtro: `order=4`
+
+### Personalizar Informe
+Edita la función `generar_informe_word()` en `generar_informe.py` para:
+- Cambiar el título
+- Agregar secciones
+- Modificar el formato
+- Incluir análisis adicionales
+
+## 🐛 Solución de Problemas
+
+### Error: "No module named 'scipy'"
+```bash
+pip install scipy
+```
+
+### Error: "No module named 'docx'"
+```bash
+pip install python-docx
+```
+
+### Error: "No se pudieron cargar datos EEG"
+- Verifica que los archivos .dat estén en la ruta correcta
+- Asegúrate de que los archivos no estén corruptos
+- Verifica el formato de los datos (timestamp, counter, eeg, attention, meditation)
+
+### Error: "No se pudo generar el informe"
+- Verifica que tienes permisos de escritura en el directorio
+- Asegúrate de que python-docx esté instalado correctamente
+- Verifica que hay datos cargados antes de generar el informe
+
+## 📚 Dependencias
+
+- **pandas**: Manipulación y análisis de datos
+- **numpy**: Cálculos numéricos
+- **matplotlib**: Generación de gráficos
+- **python-docx**: Creación de documentos Word
+- **scipy**: Filtros espectrales y procesamiento de señales
+
+## 🎯 Flujo de Trabajo
+
+```
+1. main.py
+   ↓
+2. analisis_completo.py
+   ├── Carga datos EEG
+   ├── Aplica filtros espectrales
+   ├── Genera gráficos
+   └── Calcula estadísticas
+   ↓
+3. generar_informe.py
+   ├── Crea documento Word
+   ├── Incluye gráficos
+   ├── Agrega análisis
+   └── Genera informe final
+```
+
+## 🤝 Contribuciones
+
+Para contribuir al proyecto:
+1. Fork el repositorio
+2. Crea una rama para tu feature
+3. Realiza los cambios
+4. Envía un pull request
+
+## 📄 Licencia
+
+Este proyecto está bajo la licencia MIT. Ver el archivo LICENSE para más detalles.
+
+## 📞 Contacto
+
+**Autor:** Noelia Cardozo  
+**Email:** [tu-email@ejemplo.com]  
+**Fecha:** 2025
+
+---
+
+**Nota:** Este proyecto fue desarrollado para el análisis de datos EEG como parte de una tarea académica. Los datos utilizados son propiedad de Noelia Cardozo. 
